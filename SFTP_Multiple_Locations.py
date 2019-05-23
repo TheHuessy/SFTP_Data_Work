@@ -23,6 +23,7 @@ def main(SFTP_Conn, S3):
     
     srv = SFTP_Conn
     s3 = S3
+    start_append = False
     
     for pwr in list(sub_folder):
         try:
@@ -53,7 +54,7 @@ def main(SFTP_Conn, S3):
                                  + er_msg)
                     email.send_email(email_subject="SFTP Transfer Error",
                                      email_body=em_msg,
-                                     service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                     service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
                     
                     
                 else:
@@ -72,7 +73,7 @@ def main(SFTP_Conn, S3):
                                          + er_msg)
                             email.send_email(email_subject="SFTP Transfer Error",
                                              email_body=em_msg,
-                                             service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                             service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
                             
                             continue
                     else:
@@ -87,11 +88,14 @@ def main(SFTP_Conn, S3):
                                          + er_msg)
                             email.send_email(email_subject="SFTP Transfer Error",
                                              email_body=em_msg,
-                                             service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                             service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
                             
                             continue
                 try:
                     datr = pd.read_csv(csv)
+                    
+                    data = pd.read_csv(csv)
+                    data['Building'] = sub_folder[pwr][0]
                 except Exception as err:
                     er_msg = "Could not load csv data to pandas.\nError: {}".format(err)
                     print(er_msg)
@@ -101,7 +105,16 @@ def main(SFTP_Conn, S3):
                                  + er_msg)
                     email.send_email(email_subject="SFTP Transfer Error",
                                      email_body=em_msg,
-                                     service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                     service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
+            
+                try:
+                    if not start_append:
+                        data_all = data
+                        start_append = True
+                    else:
+                        data_all = data_all.append(data)
+                except Exception as err:
+                    print("Could not load the all data!\nError: {}".format(err))
             
                 try:
                     civ_up = civis.io.dataframe_to_civis(df=datr, database='Boston', table=sub_folder[pwr][1], existing_table_rows='append')
@@ -115,33 +128,8 @@ def main(SFTP_Conn, S3):
                                  + er_msg)
                     email.send_email(email_subject="SFTP Transfer Error",
                                      email_body=em_msg,
-                                     service_key=os.environ['EMAIL_SERVICE_USERNAME'])
-            
-                if sub_folder[pwr][0] == "Copley":
-                    try:
-                        civ_up = civis.io.dataframe_to_civis(df=datr, database='Boston', table=sub_folder[pwr][3], existing_table_rows='append')
-                    except Exception as err:
-                        er_msg = "Couldn't load file to cpower_all in civis!\nError: {}".format(err)
-                        print(er_msg)
-            
-                        # Email part
-                        em_msg = str("There was an error while trying to perform the CPower SFTP transfer\n\n"
-                                     + er_msg)
-                        email.send_email(email_subject="SFTP Transfer Error",
-                                         email_body=em_msg,
-                                         service_key=os.environ['EMAIL_SERVICE_USERNAME'])
-                    try:
-                        civ_up = civis.io.dataframe_to_civis(df=datr, database='Boston', table=sub_folder[pwr][4], existing_table_rows='append')
-                    except Exception as err:
-                        er_msg = "Couldn't load file to cpower_open in civis!\nError: {}".format(err)
-                        print(er_msg)
-            
-                        # Email part
-                        em_msg = str("There was an error while trying to perform the CPower SFTP transfer\n\n"
-                                     + er_msg)
-                        email.send_email(email_subject="SFTP Transfer Error",
-                                         email_body=em_msg,
-                                         service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                     service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
+                
                 try:
                     Load.SFTP_S3_Transfer(SFTP_Conn = srv, S3_Conn = s3, dest_bucket = sub_folder[pwr][2], files = [csv])
                 except Exception as err:
@@ -153,7 +141,7 @@ def main(SFTP_Conn, S3):
                                  + er_msg)
                     email.send_email(email_subject="SFTP Transfer Error",
                                      email_body=em_msg,
-                                     service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                                     service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
     #            else:
     #            print("Loaded {} to S3".format(csv))
     #            print("Removing File...")
@@ -167,7 +155,21 @@ def main(SFTP_Conn, S3):
             print("Finished with {}".format(sub_folder[pwr][0]))
         
             srv.chdir("..")
+    try:
+        civ_up = civis.io.dataframe_to_civis(df=data_all, database='Boston', table='env_internal_data.cpower_all', existing_table_rows='append')
+        
+    except Exception as err:
+        er_msg = "Couldn't load file to cpower_all in civis!\nError: {}".format(err)
+        print(er_msg)
 
+        # Email part
+        
+        em_msg = str("There was an error while trying to perform the CPower SFTP transfer\n\n"
+                     + er_msg)
+        email.send_email(email_subject="SFTP Transfer Error",
+                         email_body=em_msg,
+                         service_key=os.environ['EMAIL_SERVICE_PASSWORD'])
+    
     print("Doneski")
     
 if __name__ == '__main__':    
