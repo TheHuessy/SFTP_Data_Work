@@ -39,7 +39,10 @@ def main(SFTP_Conn, S3):
                 try:
                     em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                  + er_msg)
-                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                    email.send_email(email_subject="SFTP Transfer Error",
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_PASSWORD'])
+                    
                 except Exception as err:
                     print("Email failed\nError: {}".format(err))
                 
@@ -59,7 +62,9 @@ def main(SFTP_Conn, S3):
                 try:
                     em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                  + er_msg)
-                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                    email.send_email(email_subject="SFTP Transfer Error",
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_PASSWORD'])
                 except Exception as err:
                     print("Email failed\nError: {}".format(err))
                 
@@ -76,7 +81,9 @@ def main(SFTP_Conn, S3):
                 try:
                     em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                  + er_msg)
-                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                    email.send_email(email_subject="SFTP Transfer Error",
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_PASSWORD'])
                 except Exception as err:
                     print("Email failed\nError: {}".format(err))
                     
@@ -84,7 +91,10 @@ def main(SFTP_Conn, S3):
                 print("Extracted column added")
         
             try:
-                civ_up = civis.io.dataframe_to_civis(df=df, database="[DATABASENAME]", table="[SCHEMA.TABLE]", existing_table_rows='append')
+                civ_up = civis.io.dataframe_to_civis(df=df,
+                                                     database="[DATABASENAME]",
+                                                     table="[SCHEMA.TABLE]",
+                                                     existing_table_rows='append')
             except Exception as err:
                 er_msg = "Could not upload {} to civis!\nError: {}".format(dats,err)
                 print(er_msg)
@@ -93,7 +103,10 @@ def main(SFTP_Conn, S3):
                 try:
                     em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                  + er_msg)
-                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                    email.send_email(email_subject="SFTP Transfer Error",
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_PASSWORD'])
+                    
                 except Exception as err:
                     print("Email failed\nError: {}".format(err))
             else:
@@ -107,7 +120,10 @@ def main(SFTP_Conn, S3):
                     try:
                         em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                      + er_msg)
-                        email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                        email.send_email(email_subject="SFTP Transfer Error",
+                                         email_body=em_msg,
+                                         service_key=os.environ['EMAIL_PASSWORD'])
+                        
                     except Exception as err:
                         print("Email failed\nError: {}".format(err))
             
@@ -115,7 +131,10 @@ def main(SFTP_Conn, S3):
         
         
             try:
-                Load.SFTP_S3_Transfer(SFTP_Conn = srv, S3_Conn = s3, dest_bucket = '[dest/bucket]', files = [dats])
+                Load.SFTP_S3_Transfer(SFTP_Conn = srv,
+                                      S3_Conn = s3,
+                                      dest_bucket = '[dest/bucket]',
+                                      files = [dats])
                 
             except Exception as err2:
                 er_msg = "SFTP to S3 Transfer failed!\nError: {}".format(err2)
@@ -125,7 +144,10 @@ def main(SFTP_Conn, S3):
                 try:
                     em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                                  + er_msg)
-                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_PASSWORD'])
+                    email.send_email(email_subject="SFTP Transfer Error", 
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_PASSWORD'])
+                    
                 except Exception as err:
                     print("Email failed\nError: {}".format(err))
             else:
@@ -137,8 +159,16 @@ def main(SFTP_Conn, S3):
 if __name__ == '__main__':
     
    
-    srv = Extract.SFTP_Connect(IP_add=[IP_ADDRESS], uname=os.environ['SFTP_USER'], pwrd=os.environ['SFTP_PWD'], conn_dir="[directory/path/to/files]", show_contents = False)
-    s3 = Extract.S3_backup_connect(aws_etl_key=os.environ['AWS_ETL_ACCESS_KEY_ID'], aws_secret_key=os.environ['AWS_ETL_SECRET_ACCESS_KEY'], bucket='[bucket-name]')
+    srv = Extract.SFTP_Connect(IP_add='[IP_ADDRESS]',
+                               uname=os.environ['SFTP_USER'],
+                               pwrd=os.environ['SFTP_PWD'],
+                               conn_dir="[directory/path/to/files]",
+                               show_contents = False)
+    
+    s3 = Extract.S3_backup_connect(aws_etl_key=os.environ['AWS_ETL_ACCESS_KEY_ID'],
+                                   aws_secret_key=os.environ['AWS_ETL_SECRET_ACCESS_KEY'],
+                                   bucket='[bucket-name]')
+    
 
     main(SFTP_Conn=srv, S3=s3)
     
