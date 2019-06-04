@@ -72,7 +72,8 @@ def main(SFTP_Conn, S3_Conn):
     print("Backing {} up to S3 at {}".format(get_file, datetime.now()))
     try:
         Load.SFTP_S3_Transfer(SFTP_Conn,
-                              S3_Conn, dest_bucket = '[destination_bucket]',
+                              S3_Conn, 
+                              dest_bucket = '[destination_bucket]',
                               files = [get_file])
     except Exception as err:
         er_msg = "SFTP to S3 Transfer failed!\nError: {}".format(err)
