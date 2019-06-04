@@ -10,15 +10,15 @@ from pathlib import PurePath
 import pysftp
 import zipfile
 
-from components.extract.python3 import SFTP_Transfer as Extract
-from components.load.python3 import SFTP_Transfer as Load
+from components import SFTP_Components_Extract as Extract
+from components import SFTP_Components_Load as Load
 from components.email import send_email as email
 
-table_keys = {"ActivityEnrollment": "bcyf_internal_data.activity_enrollment",
-              "Manifest": "bcyf_internal_data.manifest",
-              "MemberData": "bcyf_internal_data.member_data",
-              "Attendance": "bcyf_internal_data.attendance",
-              "MembershipEnrollment": "bcyf_internal_data.attendance"}
+table_keys = {"[DATASET_NAME1]": "[schema.table1]",
+              "[DATASET_NAME2]": "[schema.table2]",
+              "[DATASET_NAME3]": "[schema.table3]",
+              "[DATASET_NAME4]": "[schema.table4]",
+              "[DATASET_NAME5]": "[schema.table5]"}
 
 def Recent_File(SFTP_Conn):
     gf = None
@@ -60,25 +60,31 @@ def main(SFTP_Conn, S3_Conn):
             print(er_msg)
             
             # Email part
-            em_msg = str("There was an error while trying to perform the BCYF SFTP transfer\n\n"
+            em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                          + er_msg)
-            email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+            email.send_email(email_subject="SFTP Transfer Error",
+                             email_body=em_msg,
+                             service_key=os.environ['EMAIL_SERVICE_USERNAME'])
  
     ## Backup to S3 ##
     
         
     print("Backing {} up to S3 at {}".format(get_file, datetime.now()))
     try:
-        Load.SFTP_S3_Transfer(SFTP_Conn, S3_Conn, dest_bucket = 'bcyf/nfocus/trax7', files = [get_file])
+        Load.SFTP_S3_Transfer(SFTP_Conn,
+                              S3_Conn, dest_bucket = '[destination_bucket]',
+                              files = [get_file])
     except Exception as err:
         er_msg = "SFTP to S3 Transfer failed!\nError: {}".format(err)
         
         print(er_msg)
             
         # Email part
-        em_msg = str("There was an error while trying to perform the BCYF SFTP transfer\n\n"
+        em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                          + er_msg)
-        email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+        email.send_email(email_subject="SFTP Transfer Error",
+                         email_body=em_msg,
+                         service_key=os.environ['EMAIL_SERVICE_USERNAME'])
     else:
         del_list += [get_file]
         
@@ -95,59 +101,80 @@ def main(SFTP_Conn, S3_Conn):
             print(er_msg)
             
             # Email part
-            em_msg = str("There was an error while trying to perform the BCYF SFTP transfer\n\n"
+            em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                          + er_msg)
-            email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+            email.send_email(email_subject="SFTP Transfer Error",
+                             email_body=em_msg,
+                             service_key=os.environ['EMAIL_SERVICE_USERNAME'])
                          
             continue
             
         short_name = re.sub(pattern='.csv', repl="", string=str(file))
         
         try:
-            civt = civis.io.dataframe_to_civis(df=dat, database="Boston", table=table_keys[short_name], existing_table_rows='drop')
+            civt = civis.io.dataframe_to_civis(df=dat,
+                                               database="[DATABASE_NAME]",
+                                               table=table_keys[short_name],
+                                               existing_table_rows='drop')
         except Exception as err:
             er_msg = "Was not able to load file {} to Civis.\nError: {}".format(file,err)
             print(er_msg)
             
             # Email part
-            em_msg = str("There was an error while trying to perform the BCYF SFTP transfer\n\n"
+            em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
                          + er_msg)
-            email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+            email.send_email(email_subject="SFTP Transfer Error",
+                             email_body=em_msg,
+                             service_key=os.environ['EMAIL_SERVICE_USERNAME'])
         else:
             civt.result()
             
-#    if del_list:        
-#        for kill_file in del_list:
-#            print("Attempting removal of {} from the SFTP Server...".format(kill_file))
-#            try:
-#                SFTP_Conn.remove(kill_file)
-#            except OSError:
-#                SFTP_Conn = Extract.SFTP_Connect(IP_add='140.241.251.81', uname=os.environ['SFTP_USER'], pwrd=os.environ['SFTP_PWD'], conn_dir='BCYF/nFocus/Trax7/Backup', show_contents = False)
-#                try:
-#                    SFTP_Conn.remove(kill_file)
-#                except Exception as err:
-#                    er_msg = "It looks like {} refuses to die!\nError: {}".format(kill_file,err)
-#                    print(er_msg)
-#            
-#                    # Email part
-#                    em_msg = str("There was an error while trying to perform the BCYF SFTP transfer\n\n"
-#                                 + er_msg)
-#                    email.send_email(email_subject="SFTP Transfer Error", email_body=em_msg, service_key=os.environ['EMAIL_SERVICE_USERNAME'])
-#                    continue
-#                else:
-#                    print("{} has been removed from the SFTP Server".format(kill_file))
-#            else:
-#                print("{} has been removed from the SFTP Server".format(kill_file))
-#    else:
-#        print("No del_list found, no files to delete")
+    if del_list:        
+        for kill_file in del_list:
+            print("Attempting removal of {} from the SFTP Server...".format(kill_file))
+            try:
+                SFTP_Conn.remove(kill_file)
+            except OSError:
+                # Chances are high that if this failed it's because the SFTP connection timed out
+                # Reconnect and try again
+                SFTP_Conn = Extract.SFTP_Connect(IP_add='[IP_ADDRESS]',
+                                                 uname=os.environ['SFTP_USER'],
+                                                 pwrd=os.environ['SFTP_PWD'],
+                                                 conn_dir='[path/to/data/directory]',
+                                                 show_contents = False)
+                try:
+                    SFTP_Conn.remove(kill_file)
+                except Exception as err:
+                    er_msg = "It looks like {} refuses to die!\nError: {}".format(kill_file,err)
+                    print(er_msg)
+            
+                    # Email part
+                    em_msg = str("There was an error while trying to perform the SFTP transfer\n\n"
+                                 + er_msg)
+                    email.send_email(email_subject="SFTP Transfer Error",
+                                     email_body=em_msg,
+                                     service_key=os.environ['EMAIL_SERVICE_USERNAME'])
+                    continue
+                else:
+                    print("{} has been removed from the SFTP Server".format(kill_file))
+            else:
+                print("{} has been removed from the SFTP Server".format(kill_file))
+    else:
+        print("No del_list found, no files to delete")
     
 if __name__ == '__main__':
             
     print("Connecting to SFTP Server at {}".format(datetime.now()))
-    srv = Extract.SFTP_Connect(IP_add='140.241.251.81', uname=os.environ['SFTP_USER'], pwrd=os.environ['SFTP_PWD'], conn_dir='SFTP_Root/BCYF/nFocus/Trax7', show_contents = False)
+    srv = Extract.SFTP_Connect(IP_add='[IP_ADDRESS]',
+                               uname=os.environ['SFTP_USER'],
+                               pwrd=os.environ['SFTP_PWD'],
+                               conn_dir='[path/to/data/directory]',
+                               show_contents = False)
 
     print("Connecting to S3 at {}".format(datetime.now()))
-    s3 = Extract.S3_backup_connect(aws_etl_key=os.environ['AWS_ETL_KEY'], aws_secret_key=os.environ['AWS_ETL_SECRET'], bucket='city-of-boston')
+    s3 = Extract.S3_backup_connect(aws_etl_key=os.environ['AWS_ETL_KEY'],
+                                   aws_secret_key=os.environ['AWS_ETL_SECRET'],
+                                   bucket='[destination/bucket]')
 
     main(SFTP_Conn=srv, S3_Conn=s3)
     
