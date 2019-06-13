@@ -1,4 +1,4 @@
-# SFTP Related Data Work
+# SFTP Related ETL Data Work
 
 These scripts are examples of various methods I implement when writing ETL pipelines between an SFTP server and a cloud data warehouse. All scripts are intended to be run in a headless environment or docker container.
 
